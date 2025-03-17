@@ -4,6 +4,7 @@ use my_ez_log_macro::{
 };
 
 fn main() {
+    // default is loginfo.log
     my_ez_log_macro::log::init_logging("111.log");
     log!(LogLevel::Info, "System initialized");
 
