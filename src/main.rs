@@ -4,7 +4,7 @@ use my_ez_log_macro::{
 };
 
 fn main() {
-    my_ez_log_macro::log::init_logging("my_application.log");
+    my_ez_log_macro::log::init_logging("111.log");
     log!(LogLevel::Info, "System initialized");
 
     // 动态格式化（延迟转换）

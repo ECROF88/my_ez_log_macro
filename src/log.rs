@@ -1,6 +1,6 @@
 use std::io::Write;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::thread::{self, JoinHandle};
 
 use crossbeam::channel::{Receiver, Sender, unbounded};
@@ -18,13 +18,16 @@ impl Default for LogConfig {
     }
 }
 
-lazy_static! {
-    static ref LOG_CONFIG: Mutex<LogConfig> = Mutex::new(LogConfig::default());
-}
-// 修改init_logging函数
+// lazy_static! {
+//     static ref LOG_CONFIG: Mutex<LogConfig> = Mutex::new(LogConfig::default());
+// }
+static LOG_FILE_PATH: OnceLock<PathBuf> = OnceLock::new();
+// pub fn init_logging(file_name: &str) {
+//     let mut config = LOG_CONFIG.lock().unwrap();
+//     config.file_path = PathBuf::from(file_name); // 创建一个拥有所有权的路径
+// }
 pub fn init_logging(file_name: &str) {
-    let mut config = LOG_CONFIG.lock().unwrap();
-    config.file_path = PathBuf::from(file_name); // 创建一个拥有所有权的路径
+    let _ = LOG_FILE_PATH.set(PathBuf::from(file_name));
 }
 
 /// 日志级别
@@ -133,7 +136,8 @@ macro_rules! log {
 // ----------------------------
 fn start_background_writer(receiver: Receiver<LogEntry>) -> JoinHandle<()> {
     thread::spawn(move || {
-        let file = &LOG_CONFIG.lock().unwrap().file_path;
+        // let file = &LOG_CONFIG.lock().unwrap().file_path;
+        let file = LOG_FILE_PATH.get().expect("fail to get file path");
         let mut file = std::fs::OpenOptions::new()
             .append(true)
             .create(true)
