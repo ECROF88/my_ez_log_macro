@@ -1,9 +1,31 @@
 use std::io::Write;
+use std::path::PathBuf;
+use std::sync::Mutex;
 use std::thread::{self, JoinHandle};
 
 use crossbeam::channel::{Receiver, Sender, unbounded};
 use lazy_static::lazy_static;
 use std::cell::RefCell;
+
+pub struct LogConfig {
+    file_path: PathBuf, // 不再需要生命周期参数
+}
+impl Default for LogConfig {
+    fn default() -> Self {
+        Self {
+            file_path: PathBuf::from("loginfo.log"),
+        }
+    }
+}
+
+lazy_static! {
+    static ref LOG_CONFIG: Mutex<LogConfig> = Mutex::new(LogConfig::default());
+}
+// 修改init_logging函数
+pub fn init_logging(file_name: &str) {
+    let mut config = LOG_CONFIG.lock().unwrap();
+    config.file_path = PathBuf::from(file_name); // 创建一个拥有所有权的路径
+}
 
 /// 日志级别
 #[derive(Debug, Clone, Copy)]
@@ -94,7 +116,6 @@ macro_rules! log {
             .unwrap()
             .as_secs();
 
-        // 捕获参数到闭包中
         let formatter = Box::new(move || {
             format!($fmt, $($arg),*)
         });
@@ -112,10 +133,11 @@ macro_rules! log {
 // ----------------------------
 fn start_background_writer(receiver: Receiver<LogEntry>) -> JoinHandle<()> {
     thread::spawn(move || {
+        let file = &LOG_CONFIG.lock().unwrap().file_path;
         let mut file = std::fs::OpenOptions::new()
             .append(true)
             .create(true)
-            .open("loginfo.log")
+            .open(file)
             .unwrap();
 
         for entry in receiver {
