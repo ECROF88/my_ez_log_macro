@@ -8,7 +8,7 @@ use lazy_static::lazy_static;
 use std::cell::RefCell;
 
 pub struct LogConfig {
-    file_path: PathBuf, // 不再需要生命周期参数
+    file_path: PathBuf,
 }
 impl Default for LogConfig {
     fn default() -> Self {
